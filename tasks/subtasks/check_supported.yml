@@ -1,0 +1,47 @@
+---
+- name: Install PiHole OS CHeck
+  hosts: pihole
+  become: false
+
+  tasks:
+    - name: Base information
+      ansible.builtin.debug:
+        msg:
+          - "Distro_Name: '{{ ansible_distribution }}'"
+          - "Distro_Version: '{{ ansible_distribution_version }}'"
+          - "Distro_Release: '{{ ansible_distribution_release }}'"
+          - "Distro_Family: '{{ ansible_os_family }}'"
+
+    - name: Confirm Unsupported OS
+      pause:
+        prompt: "{{ ansible_distribution }} is not officially supported by PiHole, continue? (yes/no)"
+      register: confirm_ok_distro
+      when: >
+        ansible_distribution not in ["Fedora", "CentOS"]
+
+    - name: Exit
+      ansible.builtin.fail:
+        msg: "Ok exiting..."
+      when: "confirm_ok_distro.user_input | bool == false"
+
+    - name: Confirm Unsupported OS Version
+      pause:
+        prompt: "{{ ansible_distribution }} version {{ ansible_distribution_version }} is not officially supported by PiHole, continue? (yes/no)"
+      register: confirm_ok_distro_version
+      when: ansible_distribution_version not in ["36", "37", "38", "8", "9"]
+
+    - name: Exit
+      ansible.builtin.fail:
+        msg: "Ok exiting..."
+      when: "confirm_ok_distro_version.user_input | bool == false"
+
+    - name: Confirm SELinux
+      pause:
+        prompt: "This System has SELinux enabled, which is not officially supported by PiHole, continue? (yes/no)"
+      register: confirm_ok_selinux
+      when: ansible_selinux.status == "enabled"
+
+    - name: Exit
+      ansible.builtin.fail:
+        msg: "Ok exiting..."
+      when: "confirm_ok_selinux.user_input | bool == false"
