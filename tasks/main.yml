@@ -1,0 +1,8 @@
+---
+# Tasks file for PiHole
+
+- import_playbook: subtasks/check_supported.yml
+
+- import_playbook: subtasks/selinux.yml
+
+- import_playbook: subtasks/pihole.yml
