@@ -1,4 +1,4 @@
-# PiHole for systems with selinux enabled
+# PiHole Installer for systems with selinux enabled
 
 
 # Install
