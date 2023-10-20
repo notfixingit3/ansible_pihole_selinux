@@ -12,6 +12,11 @@
           - "Distro_Release: '{{ ansible_distribution_release }}'"
           - "Distro_Family: '{{ ansible_os_family }}'"
 
+    - name: SELinux not enabled
+      ansible.builtin.fail:
+        msg: "SELinux is not enabled on this host"
+      when: ansible_selinux.status == "disabled"
+
     - name: Confirm Unsupported OS
       pause:
         prompt: "{{ ansible_distribution }} is not officially supported by PiHole, continue? (yes/no)"
