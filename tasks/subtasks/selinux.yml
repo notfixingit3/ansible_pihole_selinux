@@ -4,7 +4,7 @@
   vars_files:
     - "../../vars/vars.yml"
   become: true
-  gather_facts: false
+  gather_facts: true
 
   tasks:
     - name: Install SELinux Userland tools
@@ -28,31 +28,31 @@
         dest: /tmp/pihole.te
       when: ansible_selinux.status == "enabled"
 
-    - name: SELinux Boooleans - PiHole Build Custom module
+    - name: SELinux Boooleans - PiHole Build SELinux mod
       ansible.builtin.command: 'checkmodule -M -m -o /tmp/pihole.mod /tmp/pihole.te'
       when: ansible_selinux.status == "enabled"
 
-    - name: SELinux Boooleans - PiHole Build Custom module
+    - name: SELinux Boooleans - PiHole Convert mod to pp
       ansible.builtin.command: 'semodule_package -o /tmp/pihole.pp -m /tmp/pihole.mod'
       when: ansible_selinux.status == "enabled"
 
-    - name: SELinux Boooleans - PiHole Build Custom module
+    - name: SELinux Boooleans - PiHole install custom module
       ansible.builtin.command: 'semodule -i /tmp/pihole.pp'
       when: ansible_selinux.status == "enabled"
 
-    - name: SELinux Boooleans - PiHole Cleanup
+    - name: SELinux Boooleans - PiHole SELinux Module Cleanup
       ansible.builtin.file:
         path: /tmp/pihole.mod
         state: absent
       when: ansible_selinux.status == "enabled"
 
-    - name: SELinux Boooleans - PiHole Cleanup
+    - name: SELinux Boooleans - PiHole SELinux Module Cleanup
       ansible.builtin.file:
         path: /tmp/pihole.pp
         state: absent
       when: ansible_selinux.status == "enabled"
 
-    - name: SELinux Boooleans - PiHole Cleanup
+    - name: SELinux Boooleans - PiHole SELinux Module Cleanup
       ansible.builtin.file:
         path: /tmp/pihole.te
         state: absent
