@@ -1,0 +1,99 @@
+---
+- name: Install PiHole
+  hosts: pihole
+  vars_files:
+    - "../../vars/vars.yml"
+  become: true
+
+  tasks:
+    - name: Download PiHole install script
+      ansible.builtin.get_url:
+        url: https://install.pi-hole.net
+        dest: /tmp/basic-install.sh
+
+    - name: Check if systemd-resolved config file exists
+      stat:
+        path: /etc/systemd/resolved.conf
+      register: systemd_resolve
+
+    - name: Turn off systemd-resolved stub
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/resolved.conf
+        regex: '^DNSStubListener='
+        line: 'DNSStubListener=no'
+      when: systemd_resolve.stat.exists == True
+
+    - name: Restart resolved
+      service:
+        name: systemd-resolved
+        state: restarted
+      when: systemd_resolve.stat.exists == True
+
+    - name: Create PiHole Dir
+      ansible.builtin.file:
+        path: /etc/pihole
+        state: directory
+        mode: '0755'
+
+    - name: Copy over setup template
+      ansible.builtin.template:
+        src: ../../templates/setupVars.conf.j2
+        dest: /etc/pihole/setupVars.conf
+        owner: root
+        group: root
+        mode: u=wr,g=r,o=r
+
+    - name: Install PiHole on Fedora/CentOS with SELinux enabled
+      ansible.builtin.shell: |
+        export PIHOLE_SELINUX=true
+        bash /tmp/basic-install.sh --unattended /dev/stdin
+      when: ansible_distribution in ["Fedora", "CentOS"]
+
+    - name: Install PiHole on Unsupported OS with SELinux enabled
+      ansible.builtin.shell: |
+        export PIHOLE_SELINUX=true
+        export PIHOLE_SKIP_OS_CHECK=true
+        bash /tmp/basic-install.sh --unattended /dev/stdin
+      when: ansible_distribution not in ["Fedora", "CentOS"]
+
+    - name: Remove Pihole installer file
+      ansible.builtin.file:
+        path: /tmp/basic-install.sh
+        state: absent
+
+    - name: Copy over path file
+      ansible.builtin.copy:
+        src: ../../files/usrlocal.sh
+        dest: /etc/profile.d/usrlocal.sh
+
+    - name: set pihole web password
+      ansible.builtin.shell: |
+        export PATH="$PATH:/usr/local/bin"
+        pihole -a -p "{{ PI_WEBPASSWORD }}"
+      when: "PI_WEBPASSWORD != None"
+
+    - name: Fix SELinux File rules
+      ansible.builtin.command: 'restorecon -R -v /var/www/html'
+
+    - name: Enable pihole-FTL
+      ansible.builtin.systemd:
+        name: pihole-FTL
+        enabled: true
+        masked: no
+        state: restarted
+
+    - name: Get Service status of firewalld
+      ansible.builtin.service_facts:
+
+    - name: Allow firewalld access for http
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        immediate: true
+        state: enabled
+      when: ansible_facts.services['firewalld.service'].status == 'enabled'
+
+    - debug:
+        msg:
+          - "PiHole Admin http://{{ ansible_default_ipv4.address }}/admin/"
+          - "Happy Surfing"
