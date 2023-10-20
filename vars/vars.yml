@@ -1,0 +1,6 @@
+# Pihole admin web interface password, only valid if PI_LOGGING = true, username admin
+PI_WEBPASSWORD: "admin"  # or null
+
+# Set the dns servers you want pihole to use upstream
+PIHOLE_DNS_1: 1.1.1.1
+PIHOLE_DNS_2: 1.0.0.1
